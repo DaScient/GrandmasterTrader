@@ -1,0 +1,39 @@
+# m▶️ Usage
+# bash
+
+# Run the Flask server
+python main.py
+
+# Open your browser at http://localhost:5000.
+# Click on any ticker row to load the interactive Plotly chart.
+
+""" 🗂️ File Overview
+#	•	main.py
+# Flask app with two endpoints:
+	•	/ → serves the dashboard
+	•	/api/signals → JSON of live signals
+	•	/api/history/<symbol> → JSON of history + indicators + forecasts
+	•	modules/utils.py
+List of tracked assets.
+	•	modules/indicators.py
+Functions to compute RSI, AO, and golden-cross.
+	•	modules/sentiment.py
+Fetches and scores news headlines via RSS + VADER.
+	•	modules/predictive.py
+Monte Carlo simulation for future price percentiles.
+	•	modules/data_fetch.py
+Combines historical data, live feeds, indicators, sentiment, and forecasts into a single get_signals function and a get_history helper.
+	•	templates/dashboard_v3.html
+Front-end: HTML + Plotly chart + JS logic for drill-down interactivity.
+
+🔄 Extending & Contributing
+	1.	Fork the repo
+	2.	Create a feature branch (git checkout -b feature/my-feature)
+	3.	Commit your changes (git commit -m "Add awesome feature")
+	4.	Push to your branch (git push origin feature/my-feature)
+	5.	Open a Pull Request
+
+Please adhere to the existing code style and include tests where applicable.
+"""
+
+Made with ❤️ by [Don D.M. Tadaya](https://linkedin.com/in/dontadaya) 
