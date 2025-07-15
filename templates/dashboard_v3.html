@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>TradePulse Live v3</title>
+  <!-- Pin to Plotly 2.28.1 to avoid v1.x deprecation warning -->
+  <script src="https://cdn.plot.ly/plotly-2.28.1.min.js"></script>
+  <style>
+    body { background:#0a0a0a; color:#e0e0e0; font-family:sans-serif; padding:1rem }
+    table { width:100%; border-collapse:collapse; }
+    th,td { padding:0.5rem; border:1px solid #333; text-align:center; }
+    th { background:#111; }
+    .Buy  { color:#0f0; font-weight:700; }
+    .Sell { color:#f00; font-weight:700; }
+    .Hold { color:#aaa; }
+    .positive { color:#0f0; }
+    .negative { color:#f00; }
+    #chart { width:100%; height:500px; margin-top:2rem; }
+    #controls { margin:1rem 0; text-align:center; }
+  </style>
+</head>
+<body>
+  <h1>TradePulse Live v3</h1>
+
+  <div id="controls">
+    Timeframe:
+    <select id="period">
+      <option value="1d">1d</option>
+      <option value="1w">1w</option>
+      <option value="1m" selected>1m</option>
+      <option value="3m">3m</option>
+    </select>
+    Interval:
+    <select id="interval">
+      <option value="1m">1m</option>
+      <option value="5m">5m</option>
+      <option value="1h" selected>1h</option>
+      <option value="1d">1d</option>
+    </select>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Symbol</th><th>Price</th><th>RSI</th><th>AO</th>
+        <th>Sentiment</th><th>Target</th><th>Upside%</th><th>Signal</th>
+      </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+  </table>
+
+  <div id="chart"></div>
+
+  <script>
+    async function loadTable(){
+      const res  = await fetch('/api/signals');
+      const data = await res.json();
+      document.getElementById('tb').innerHTML = data.map(i=>`
+        <tr data-symbol="${i.symbol}">
+          <td>${i.symbol}</td>
+          <td>${i.current_price}</td>
+          <td>${i.rsi}</td>
+          <td>${i.ao}</td>
+          <td>${i.sentiment}</td>
+          <td>${i.target_price}</td>
+          <td class="${i.upside_pct>=0?'positive':'negative'}">${i.upside_pct}%</td>
+          <td class="${i.signal}">${i.signal}</td>
+        </tr>
+      `).join('');
+      document.querySelectorAll('#tb tr').forEach(r=>{
+        r.onclick = () => loadChart(r.dataset.symbol);
+      });
+    }
+
+    async function loadChart(symbol){
+      const p  = document.getElementById('period').value;
+      const iv = document.getElementById('interval').value;
+      const res = await fetch(`/api/history/${symbol}?period=${p}&interval=${iv}`);
+      const data = await res.json();
+      const dates  = data.map(r=>r.Date);
+      const opens  = data.map(r=>r.Open);
+      const highs  = data.map(r=>r.High);
+      const lows   = data.map(r=>r.Low);
+      const closes = data.map(r=>r.Close);
+      const rsi    = data.map(r=>r.rsi);
+      const ao     = data.map(r=>r.ao);
+      const fhi    = data.map(r=>r.forecast_high);
+
+      const traces = [
+        { x:dates, open:opens, high:highs, low:lows, close:closes, type:'candlestick', name:symbol },
+        { x:dates, y:rsi, yaxis:'y2', mode:'lines', name:'RSI' },
+        { x:dates, y:ao, yaxis:'y3', mode:'lines', name:'AO' },
+        { x:dates, y:fhi, mode:'lines', line:{ dash:'dot' }, name:'Forecast (90%)' }
+      ];
+
+      const layout = {
+        title:`${symbol} Price & Indicators`,
+        xaxis:  { rangeslider:{ visible:false }, type:'date' },
+        yaxis:  { domain:[0.35,1],  title:'Price' },
+        yaxis2: { domain:[0.2,0.35], title:'RSI' },
+        yaxis3: { domain:[0,0.2],    title:'AO' },
+        margin: { t:40, b:40, l:50, r:50 }
+      };
+
+      Plotly.newPlot('chart', traces, layout, { responsive:true });
+    }
+
+    document.getElementById('period').onchange   = loadTable;
+    document.getElementById('interval').onchange = loadTable;
+
+    loadTable();
+  </script>
+</body>
+</html>
